@@ -12,6 +12,8 @@ image_size = 28
 image_chn = 1
 input_shape = (image_size, image_size, image_chn)
 
+import matplotlib.pyplot as plt
+
 
 # Logic for calculating reconstruction probability
 def reconstruction_probability(dec, z_mean, z_log_var, X):
@@ -95,26 +97,23 @@ def main():
         DJ_FOLDER = RESULTS_PATH + "mnist_xm/*.npy"
         filelist = [f for f in glob.glob(DJ_FOLDER)]
 
-        # TODO: uniform the format and avoid code duplication
-        # npy extension
+        count_ids = 0
         if len(filelist) != 0:
-            print("Found samples: " + str(len(filelist)))
             for sample in filelist:
-                s = np.load(sample)
+                # TODO: correct the input images to drop the white frame, a reshape only is not a fix
+                s = np.load(sample).reshape(28, 28, 1)
+                # plt.figure()
+                # plt.imshow(s, cmap='gray')
+                # plt.axis('off')
+                # plt.show()
                 distr, loss = compute_valid(s, encoder, decoder, vae_threshold)
+                if distr == 'id':
+                    count_ids += 1
                 sample_name = ntpath.split(sample)[-1]
                 writer.writerow(['XMutant', sample_name, distr, loss])
-        # png extension
-        else:
-            DJ_FOLDER = RESULTS_PATH + "mnist_xm/*.png"
-            filelist = [f for f in glob.glob(DJ_FOLDER)]
 
-            print("Found samples: " + str(len(filelist)))
-            for sample in filelist:
-                s = imageio.v2.imread(sample)
-                distr, loss = compute_valid(s, encoder, decoder, vae_threshold)
-                sample_name = ntpath.split(sample)[-1]
-                writer.writerow(['XMutant', sample_name, distr, loss])
+        print("Found samples: " + str(len(filelist)))
+        print("Valid (in-distribution): %d (%d%%)" % (count_ids, count_ids / len(filelist) * 100))
 
 
 if __name__ == "__main__":
